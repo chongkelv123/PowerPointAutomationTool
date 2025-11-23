@@ -271,3 +271,178 @@ python test_generate_ppt.py
 FastAPI provides interactive API documentation at:
 - Swagger UI: http://localhost:8000/docs
 - ReDoc: http://localhost:8000/redoc
+
+---
+
+## Template Support
+
+### Endpoint: POST /api/ppt/generate-ppt-with-template
+
+Generate a PowerPoint presentation using a custom template. This endpoint accepts a template file upload and uses it to maintain consistent branding, colors, fonts, and layouts.
+
+#### Request Format
+
+This endpoint uses `multipart/form-data` instead of JSON.
+
+**Form Fields:**
+- `data` (string, required): JSON string with presentation data (same structure as /generate-ppt)
+- `template` (file, optional): PowerPoint template file (.pptx)
+
+**Example data field:**
+```json
+{
+  "title": "Quarterly Report",
+  "content": [
+    {
+      "title": "Overview",
+      "content": {
+        "bullet_points": [
+          "Revenue increased 25%",
+          "New market expansion",
+          "Product launches"
+        ]
+      }
+    }
+  ]
+}
+```
+
+#### Response
+
+Returns a `.pptx` file as a download, generated using the template's styles and layouts.
+
+#### Example Usage with curl
+
+```bash
+curl -X POST http://localhost:8000/api/ppt/generate-ppt-with-template \
+  -F 'data={"title":"My Presentation","content":[{"title":"Slide 1","content":{"bullet_points":["Point 1","Point 2"]}}]}' \
+  -F 'template=@/path/to/template.pptx' \
+  --output presentation.pptx
+```
+
+#### Example Usage with Python
+
+```python
+import requests
+import json
+
+url = "http://localhost:8000/api/ppt/generate-ppt-with-template"
+
+data = {
+    "title": "Quarterly Report",
+    "content": [
+        {
+            "title": "Overview",
+            "content": {
+                "bullet_points": [
+                    "Revenue increased 25%",
+                    "New market expansion",
+                    "Product launches"
+                ]
+            }
+        }
+    ]
+}
+
+files = {
+    'data': (None, json.dumps(data)),
+    'template': ('template.pptx', open('template.pptx', 'rb'), 'application/vnd.openxmlformats-officedocument.presentationml.presentation')
+}
+
+response = requests.post(url, files=files)
+
+if response.status_code == 200:
+    with open("output.pptx", "wb") as f:
+        f.write(response.content)
+    print("Presentation created with template!")
+```
+
+---
+
+### Template Management Endpoints
+
+#### GET /api/ppt/templates
+
+List all uploaded templates.
+
+**Response:**
+```json
+{
+  "templates": [
+    {
+      "filename": "template_20231123_140500_corporate.pptx",
+      "size": 125600,
+      "created": "2023-11-23T14:05:00",
+      "modified": "2023-11-23T14:05:00"
+    }
+  ]
+}
+```
+
+#### POST /api/ppt/templates/upload
+
+Upload a PowerPoint template for later use.
+
+**Request:**
+- `template` (file, required): PowerPoint template file (.pptx)
+
+**Response:**
+```json
+{
+  "message": "Template uploaded successfully",
+  "filename": "template_20231123_140500_corporate.pptx"
+}
+```
+
+**Example:**
+```bash
+curl -X POST http://localhost:8000/api/ppt/templates/upload \
+  -F 'template=@corporate_template.pptx'
+```
+
+#### DELETE /api/ppt/templates/{filename}
+
+Delete a template by filename.
+
+**Response:**
+```json
+{
+  "message": "Template deleted successfully"
+}
+```
+
+**Example:**
+```bash
+curl -X DELETE http://localhost:8000/api/ppt/templates/template_20231123_140500_corporate.pptx
+```
+
+---
+
+## Template Features
+
+When using a template:
+
+1. **Slide Layouts**: The template's slide layouts are used automatically
+2. **Colors & Fonts**: All template styling is preserved
+3. **Master Slides**: Template's master slides and themes are maintained
+4. **Backgrounds**: Custom backgrounds from the template are kept
+5. **Logo & Branding**: Any branding elements in the template are preserved
+
+### Best Practices
+
+1. **Template Structure**: Ensure your template has:
+   - A title slide layout (layout 0)
+   - Content slide layouts with title and content placeholders
+   - A blank layout for image-heavy slides
+
+2. **Placeholders**: Use standard PowerPoint placeholders for best results
+
+3. **Testing**: Test your template with sample content before production use
+
+4. **File Size**: Keep template files under 5MB for optimal performance
+
+### Limitations
+
+- Template layouts must be compatible with standard PowerPoint structure
+- Custom shapes and animations from templates are preserved but not modified
+- Very complex templates may require manual adjustment after generation

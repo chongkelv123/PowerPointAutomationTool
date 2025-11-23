@@ -11,6 +11,8 @@ FastAPI backend for PowerPoint automation web application.
   - Text and bullet point content
   - Custom image positioning
   - Automatic slide layout management
+- **Template support** - Use custom .pptx templates to maintain branding
+- Template management (upload, list, delete)
 - CORS enabled for frontend communication
 - Automatic file management
 - File download responses
@@ -60,12 +62,21 @@ API documentation will be available at `http://localhost:8000/docs`
 
 ## API Endpoints
 
-- `GET /` - Root endpoint
-- `GET /health` - Health check
-- `GET /api/ppt` - Get list of presentations
+### Presentation Generation
 - `POST /api/ppt/create` - Create a new presentation (simple)
 - `POST /api/ppt/generate-ppt` - Generate advanced presentation with images and structured content
+- `POST /api/ppt/generate-ppt-with-template` - Generate presentation using a custom template
 - `GET /api/ppt/{presentation_id}` - Get specific presentation
+- `GET /api/ppt` - Get list of presentations
+
+### Template Management
+- `GET /api/ppt/templates` - List all uploaded templates
+- `POST /api/ppt/templates/upload` - Upload a PowerPoint template
+- `DELETE /api/ppt/templates/{filename}` - Delete a template
+
+### System
+- `GET /` - Root endpoint
+- `GET /health` - Health check
 
 For detailed API documentation, see [API_DOCUMENTATION.md](./API_DOCUMENTATION.md)
 

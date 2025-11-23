@@ -110,7 +110,8 @@ def add_image_to_slide(slide, image_data: dict, default_left: float = 1, default
 async def generate_advanced_presentation(
     title: str,
     content: list,
-    title_images: Optional[list] = None
+    title_images: Optional[list] = None,
+    template_path: Optional[str] = None
 ) -> dict:
     """
     Generate a PowerPoint presentation with advanced features including images and bullet points
@@ -119,18 +120,32 @@ async def generate_advanced_presentation(
         title: Presentation title
         content: List of slide objects with title, content (text/bullet_points), and images
         title_images: Optional list of images for the title slide
+        template_path: Optional path to a .pptx template file
 
     Returns:
         Dictionary with presentation details
     """
-    prs = Presentation()
-    prs.slide_width = Inches(10)
-    prs.slide_height = Inches(7.5)
+    # Load template or create blank presentation
+    if template_path and os.path.exists(template_path):
+        prs = Presentation(template_path)
+    else:
+        prs = Presentation()
+        prs.slide_width = Inches(10)
+        prs.slide_height = Inches(7.5)
 
     # Add title slide
     title_slide_layout = prs.slide_layouts[0]
     title_slide = prs.slides.add_slide(title_slide_layout)
-    title_slide.shapes.title.text = title
+
+    # Set title - find the title placeholder
+    if title_slide.shapes.title:
+        title_slide.shapes.title.text = title
+    else:
+        # If no title placeholder, try to find a text box
+        for shape in title_slide.shapes:
+            if shape.has_text_frame:
+                shape.text = title
+                break
 
     # Add images to title slide if provided
     if title_images:
@@ -151,8 +166,11 @@ async def generate_advanced_presentation(
 
         # Determine slide layout based on content type
         if slide_images:
-            # Use blank layout for slides with images
-            slide_layout = prs.slide_layouts[6]  # Blank layout
+            # Use blank layout for slides with images (or last layout if template has fewer layouts)
+            try:
+                slide_layout = prs.slide_layouts[6]  # Blank layout
+            except IndexError:
+                slide_layout = prs.slide_layouts[-1]  # Use last available layout
             slide = prs.slides.add_slide(slide_layout)
 
             # Add title manually
@@ -178,10 +196,22 @@ async def generate_advanced_presentation(
             content_height = Inches(5)
 
         else:
-            # Use standard bullet layout for text-only slides
-            slide_layout = prs.slide_layouts[1]
+            # Use standard bullet layout for text-only slides (or first content layout available)
+            try:
+                slide_layout = prs.slide_layouts[1]
+            except IndexError:
+                slide_layout = prs.slide_layouts[0] if len(prs.slide_layouts) > 0 else prs.slide_layouts[0]
             slide = prs.slides.add_slide(slide_layout)
-            slide.shapes.title.text = slide_title
+
+            # Set slide title - handle different template structures
+            if slide.shapes.title:
+                slide.shapes.title.text = slide_title
+            else:
+                # Try to find the first text placeholder
+                for shape in slide.shapes:
+                    if shape.has_text_frame and shape.is_placeholder:
+                        shape.text = slide_title
+                        break
 
             content_left = None  # Will use placeholder
             content_top = None

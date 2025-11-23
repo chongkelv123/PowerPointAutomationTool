@@ -41,5 +41,8 @@ venv/
 output/
 *.pptx
 
+# Templates (uploaded templates)
+templates/
+
 # Logs
 *.log
