@@ -37,18 +37,26 @@ PowerPointAutomationTool/
 ## Features
 
 ### Frontend
-- Modern React UI with hooks
-- Real-time form validation
+- Modern React UI with Tailwind CSS styling
+- Image upload support (file upload or URL)
+- Bullet points support (one per line)
 - Dynamic slide management (add/remove slides)
+- Real-time form validation
+- Automatic file download
 - Responsive design
 - API integration layer
 
 ### Backend
 - RESTful API with FastAPI
 - PowerPoint generation using python-pptx
+- Advanced features:
+  - Support for images from URLs or base64
+  - Bullet points and text content
+  - Custom image positioning
+  - Automatic slide layout management
 - CORS enabled for frontend communication
 - Health check endpoints
-- Automatic file management
+- File download responses
 
 ## Quick Start
 
@@ -109,23 +117,30 @@ Frontend will be available at `http://localhost:5173`
 
 1. Open the frontend at `http://localhost:5173`
 2. Enter a presentation title
-3. Add slides with titles and content
-4. Click "Create Presentation" to generate your PowerPoint
-5. The generated file will be saved in `backend/output/`
+3. For each slide:
+   - Enter a slide title
+   - Add content (one bullet point per line)
+   - Optionally upload an image or provide an image URL
+4. Click "Generate PowerPoint"
+5. The presentation will automatically download to your computer
 
 ## API Endpoints
 
 - `GET /` - Root endpoint
 - `GET /health` - Health check
 - `GET /api/ppt` - List presentations
-- `POST /api/ppt/create` - Create new presentation
+- `POST /api/ppt/create` - Create new presentation (simple)
+- `POST /api/ppt/generate-ppt` - Generate advanced presentation with images and structured content
 - `GET /api/ppt/{id}` - Get specific presentation
+
+For detailed API documentation, see [backend/API_DOCUMENTATION.md](./backend/API_DOCUMENTATION.md)
 
 ## Technologies
 
 ### Frontend
 - React 18
 - Vite 6
+- Tailwind CSS 3
 - Modern JavaScript (ES6+)
 
 ### Backend
@@ -133,6 +148,8 @@ Frontend will be available at `http://localhost:5173`
 - Python-pptx
 - Uvicorn (ASGI server)
 - Pydantic (data validation)
+- Requests (HTTP library)
+- Pillow (image processing)
 
 ## Development
 
