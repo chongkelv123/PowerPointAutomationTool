@@ -6,8 +6,14 @@ FastAPI backend for PowerPoint automation web application.
 
 - RESTful API for PowerPoint generation
 - Python-pptx integration for PowerPoint manipulation
+- Advanced presentation generation with:
+  - Support for images from URLs or base64
+  - Text and bullet point content
+  - Custom image positioning
+  - Automatic slide layout management
 - CORS enabled for frontend communication
 - Automatic file management
+- File download responses
 
 ## Setup
 
@@ -57,8 +63,11 @@ API documentation will be available at `http://localhost:8000/docs`
 - `GET /` - Root endpoint
 - `GET /health` - Health check
 - `GET /api/ppt` - Get list of presentations
-- `POST /api/ppt/create` - Create a new presentation
+- `POST /api/ppt/create` - Create a new presentation (simple)
+- `POST /api/ppt/generate-ppt` - Generate advanced presentation with images and structured content
 - `GET /api/ppt/{presentation_id}` - Get specific presentation
+
+For detailed API documentation, see [API_DOCUMENTATION.md](./API_DOCUMENTATION.md)
 
 ## Project Structure
 
@@ -79,9 +88,21 @@ backend/
 └── README.md               # This file
 ```
 
+## Testing
+
+Run the test script to verify the API:
+
+```bash
+python test_generate_ppt.py
+```
+
+This will create sample presentations demonstrating various features.
+
 ## Technologies
 
 - **FastAPI** - Modern, fast web framework
 - **python-pptx** - PowerPoint file manipulation
 - **Uvicorn** - ASGI server
 - **Pydantic** - Data validation
+- **Requests** - HTTP library for image downloads
+- **Pillow** - Image processing
