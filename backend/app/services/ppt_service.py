@@ -1,6 +1,7 @@
 from pptx import Presentation
 from pptx.util import Inches, Pt
 from pptx.enum.text import PP_ALIGN
+from pptx.enum.shapes import MSO_SHAPE_TYPE, PP_PLACEHOLDER
 import os
 import base64
 import io
@@ -8,6 +9,12 @@ import requests
 from datetime import datetime
 from typing import Optional
 from PIL import Image
+from app.services.template_analyzer import (
+    TemplateAnalyzer,
+    adjust_font_size_for_overflow,
+    split_bullet_points,
+    should_split_content
+)
 
 async def create_presentation(title: str, slides: list[dict]) -> dict:
     """
@@ -126,40 +133,85 @@ async def generate_advanced_presentation(
         Dictionary with presentation details
     """
     # Load template or create blank presentation
+    use_smart_layout = False
+    analyzer = None
+
     if template_path and os.path.exists(template_path):
         prs = Presentation(template_path)
+        # Analyze template for smart layout selection
+        analyzer = TemplateAnalyzer(prs)
+        use_smart_layout = True
     else:
         prs = Presentation()
         prs.slide_width = Inches(10)
         prs.slide_height = Inches(7.5)
 
     # Add title slide
-    title_slide_layout = prs.slide_layouts[0]
-    title_slide = prs.slides.add_slide(title_slide_layout)
-
-    # Set title - find the title placeholder
-    if title_slide.shapes.title:
-        title_slide.shapes.title.text = title
+    if use_smart_layout and analyzer:
+        # Use smart title slide builder
+        from app.services.smart_slide_builder import add_title_slide
+        title_slide = add_title_slide(prs, analyzer, title, images=title_images)
     else:
-        # If no title placeholder, try to find a text box
-        for shape in title_slide.shapes:
-            if shape.has_text_frame:
-                shape.text = title
-                break
+        # Use simple title slide creation
+        title_slide_layout = prs.slide_layouts[0]
+        title_slide = prs.slides.add_slide(title_slide_layout)
 
-    # Add images to title slide if provided
-    if title_images:
-        for idx, img_data in enumerate(title_images):
-            # Position images on right side of title slide
-            add_image_to_slide(
-                title_slide,
-                img_data,
-                default_left=6 + (idx * 0.5),
-                default_top=2
-            )
+        # Set title - find the title placeholder
+        if title_slide.shapes.title:
+            title_slide.shapes.title.text = title
+        else:
+            # If no title placeholder, try to find a text box
+            for shape in title_slide.shapes:
+                if shape.has_text_frame:
+                    shape.text = title
+                    break
+
+        # Add images to title slide if provided
+        if title_images:
+            for idx, img_data in enumerate(title_images):
+                # Position images on right side of title slide
+                add_image_to_slide(
+                    title_slide,
+                    img_data,
+                    default_left=6 + (idx * 0.5),
+                    default_top=2
+                )
 
     # Add content slides
     for slide_data in content:
+        # Use smart layout if template analyzer is available
+        if use_smart_layout and analyzer:
+            from app.services.smart_slide_builder import add_slide_with_smart_layout
+
+            slide_title = slide_data.get('title', 'Untitled Slide')
+            slide_content = slide_data.get('content', {})
+            slide_images = slide_data.get('images', [])
+
+            # Check if content should be split
+            bullet_points = slide_content.get('bullet_points', [])
+            if bullet_points and len(bullet_points) > 6:
+                # Split bullet points across multiple slides
+                point_groups = split_bullet_points(bullet_points, max_per_slide=6)
+                for idx, points in enumerate(point_groups):
+                    slide_title_suffix = f" ({idx + 1}/{len(point_groups)})" if len(point_groups) > 1 else ""
+                    add_slide_with_smart_layout(
+                        prs,
+                        analyzer,
+                        slide_title + slide_title_suffix,
+                        {'bullet_points': points},
+                        slide_images if idx == 0 else None
+                    )
+            else:
+                add_slide_with_smart_layout(
+                    prs,
+                    analyzer,
+                    slide_title,
+                    slide_content,
+                    slide_images
+                )
+            continue
+
+        # Fall through to legacy slide creation for non-template presentations
         slide_title = slide_data.get('title', 'Untitled Slide')
         slide_content = slide_data.get('content', {})
         slide_images = slide_data.get('images', [])
